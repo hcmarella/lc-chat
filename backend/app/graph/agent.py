@@ -1,11 +1,12 @@
 """LangGraph agent: a supervised tool-calling loop with a checkpointed thread."""
-import sqlite3
+import asyncio
 from pathlib import Path
 from typing import Annotated, TypedDict
 
+import aiosqlite
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import AnyMessage, SystemMessage
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -40,30 +41,35 @@ def _llm():
     ).bind_tools(TOOLS)
 
 
-def _call_model(state: State) -> dict:
+async def _call_model(state: State) -> dict:
     messages = [SystemMessage(content=SYSTEM_PROMPT), *state["messages"]]
-    return {"messages": [_llm().invoke(messages)]}
+    return {"messages": [await _llm().ainvoke(messages)]}
 
 
-def build_graph():
-    s = settings()
-    Path(s.checkpoint_db).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(s.checkpoint_db, check_same_thread=False)
-
+def _builder() -> StateGraph:
     builder = StateGraph(State)
     builder.add_node("agent", _call_model)
     builder.add_node("tools", ToolNode(TOOLS))
     builder.add_edge(START, "agent")
     builder.add_conditional_edges("agent", tools_condition, {"tools": "tools", END: END})
     builder.add_edge("tools", "agent")
-    return builder.compile(checkpointer=SqliteSaver(conn))
+    return builder
 
 
-GRAPH = None
+_GRAPH = None
+_LOCK = asyncio.Lock()
 
 
-def graph():
-    global GRAPH
-    if GRAPH is None:
-        GRAPH = build_graph()
-    return GRAPH
+async def graph():
+    """Compile once, lazily, so the aiosqlite connection lives on the running loop."""
+    global _GRAPH
+    if _GRAPH is None:
+        async with _LOCK:
+            if _GRAPH is None:
+                db = settings().checkpoint_db
+                Path(db).parent.mkdir(parents=True, exist_ok=True)
+                conn = await aiosqlite.connect(db)
+                saver = AsyncSqliteSaver(conn)
+                await saver.setup()
+                _GRAPH = _builder().compile(checkpointer=saver)
+    return _GRAPH

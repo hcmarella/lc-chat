@@ -4,7 +4,7 @@ Each tool is deliberately thin: it validates arguments, hits a data source and
 returns JSON-serialisable rows. Replace the in-memory sample data with your
 warehouse client (Snowflake / Redshift / BigQuery) without touching the graph.
 """
-from datetime import date, timedelta
+from datetime import date
 from typing import Literal
 
 from langchain_core.tools import tool
@@ -18,11 +18,12 @@ _METRICS = {
 
 
 def _months(n: int) -> list[str]:
-    today = date.today().replace(day=1)
+    """The last n calendar months, oldest first, ending with the current one."""
+    today = date.today()
     out = []
     for i in range(n - 1, -1, -1):
-        m = today - timedelta(days=31 * i)
-        out.append(m.strftime("%Y-%m"))
+        total = today.year * 12 + (today.month - 1) - i
+        out.append(f"{total // 12:04d}-{total % 12 + 1:02d}")
     return out
 
 

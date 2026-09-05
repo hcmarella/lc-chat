@@ -63,6 +63,13 @@
     </form>
   </section>
 </div>
+<script>
+  // Same-origin in Docker/K8s (nginx proxies /api). When the SPA is served on a
+  // different port during local dev, point it at the backend explicitly.
+  window.BIZCHAT_API = location.port === "8000" || location.protocol === "file:"
+    ? "/api/v1"
+    : (localStorage.getItem("bizchat_api") || "http://localhost:8000/api/v1");
+</script>
 <script src="./app.js"></script>
 </body>
 </html>

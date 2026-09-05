@@ -33,7 +33,8 @@ async def chat(req: ChatRequest, request: Request):
     """Non-streaming turn. Returns the final assistant message."""
     principal = _principal(request)
     cfg = {"configurable": {"thread_id": f"{principal}:{req.thread_id}"}}
-    result = graph().invoke({"messages": [HumanMessage(req.message)]}, cfg)
+    g = await graph()
+    result = await g.ainvoke({"messages": [HumanMessage(req.message)]}, cfg)
     return {"reply": result["messages"][-1].content, "thread_id": req.thread_id}
 
 
@@ -45,7 +46,8 @@ async def chat_stream(req: ChatRequest, request: Request):
 
     async def events() -> AsyncIterator[dict]:
         try:
-            async for kind, payload in graph().astream(
+            g = await graph()
+            async for kind, payload in g.astream(
                 {"messages": [HumanMessage(req.message)]}, cfg, stream_mode=["messages", "updates"]
             ):
                 if kind == "messages":

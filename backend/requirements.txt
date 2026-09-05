@@ -6,6 +6,7 @@ langchain-core==0.3.29
 langchain-anthropic==0.3.1
 langgraph==0.2.61
 langgraph-checkpoint-sqlite==2.0.1
+aiosqlite==0.20.0
 httpx==0.28.1
 sse-starlette==2.2.1
 prometheus-client==0.21.1
