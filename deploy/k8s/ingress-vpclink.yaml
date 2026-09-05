@@ -1,0 +1,22 @@
+# Path B (with API Gateway): an *internal* ALB, reached by API Gateway HTTP API
+# through a VPC Link. Auth, throttling, WAF and usage plans live at the gateway.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bizchat-internal
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=300
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend: {service: {name: bizchat-backend, port: {number: 8000}}}
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: bizchat-web, port: {number: 80}}}

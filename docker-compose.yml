@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.backend
+    environment:
+      BIZCHAT_ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY}
+      BIZCHAT_ENV: local
+      BIZCHAT_CHECKPOINT_DB: /srv/data/checkpoints.sqlite
+    volumes:
+      - checkpoints:/srv/data
+    ports: ["8000:8000"]
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.web
+    ports: ["8080:8080"]
+    depends_on: [backend]
+
+volumes:
+  checkpoints:

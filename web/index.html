@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BizChat — Business Intelligence Console</title>
+<link rel="stylesheet" href="./styles.css"/>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand"><span class="dot"></span> BizChat</div>
+    <nav>
+      <button class="nav active" data-view="overview">Overview</button>
+      <button class="nav" data-view="segments">Segments</button>
+      <button class="nav" data-view="threads">Threads</button>
+    </nav>
+    <div class="rail-foot">
+      <label class="switch"><input type="checkbox" id="theme"/><span>Light mode</span></label>
+      <div class="env" id="env">connecting…</div>
+    </div>
+  </aside>
+
+  <main class="board">
+    <header class="topbar">
+      <div>
+        <h1>Business Overview</h1>
+        <p class="sub">Live metrics, grounded answers. Every figure is tool-sourced.</p>
+      </div>
+      <button class="ghost" id="refresh">Refresh</button>
+    </header>
+
+    <section class="tiles" id="tiles"></section>
+
+    <section class="panels">
+      <div class="card">
+        <h2>Trend</h2>
+        <div class="chart" id="trend"></div>
+      </div>
+      <div class="card">
+        <h2>Revenue by segment</h2>
+        <div class="bars" id="segments"></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="chat">
+    <header class="chat-head">
+      <h2>Analyst</h2>
+      <button class="ghost sm" id="newthread">New thread</button>
+    </header>
+    <div class="log" id="log">
+      <div class="msg bot"><div class="bubble">Ask me about revenue, active users, churn or margin. I answer from the warehouse, not from memory.</div></div>
+    </div>
+    <div class="suggest" id="suggest">
+      <button>How is revenue trending?</button>
+      <button>Which segment drives the most revenue?</button>
+      <button>Is churn improving?</button>
+    </div>
+    <form class="composer" id="composer">
+      <textarea id="input" rows="1" placeholder="Ask a business question…"></textarea>
+      <button type="submit" id="send">Send</button>
+    </form>
+  </section>
+</div>
+<script src="./app.js"></script>
+</body>
+</html>

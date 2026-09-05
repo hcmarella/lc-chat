@@ -1,0 +1,26 @@
+# Path A (no API Gateway): ALB Ingress terminates TLS and fronts both services.
+# Delete this file and use deploy/k8s/ingress-vpclink.yaml when fronting with API Gateway.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bizchat
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/certificate-arn: ACM_CERT_ARN
+    # SSE: keep the idle timeout above the longest expected agent turn.
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=300
+spec:
+  rules:
+    - host: bizchat.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend: {service: {name: bizchat-backend, port: {number: 8000}}}
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: bizchat-web, port: {number: 80}}}

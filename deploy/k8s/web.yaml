@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bizchat-web
+  labels: {app: bizchat, component: web}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: bizchat, component: web}
+  template:
+    metadata:
+      labels: {app: bizchat, component: web}
+    spec:
+      containers:
+        - name: web
+          image: ACCOUNT.dkr.ecr.REGION.amazonaws.com/bizchat-web:latest
+          ports: [{containerPort: 8080}]
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bizchat-web
+spec:
+  selector: {app: bizchat, component: web}
+  ports: [{port: 80, targetPort: 8080}]

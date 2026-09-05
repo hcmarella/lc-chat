@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bizchat-backend
+  labels: {app: bizchat, component: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: bizchat, component: backend}
+  template:
+    metadata:
+      labels: {app: bizchat, component: backend}
+    spec:
+      serviceAccountName: bizchat        # IRSA-bound; see terraform module
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: backend
+          image: ACCOUNT.dkr.ecr.REGION.amazonaws.com/bizchat-backend:latest
+          ports: [{containerPort: 8000}]
+          env:
+            - name: BIZCHAT_ENV
+              value: prod
+            - name: BIZCHAT_BEHIND_API_GATEWAY
+              value: "true"
+            - name: BIZCHAT_ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef: {name: bizchat-secrets, key: anthropic_api_key}
+          resources:
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          readinessProbe:
+            httpGet: {path: /api/v1/readyz, port: 8000}
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: {path: /api/v1/healthz, port: 8000}
+            initialDelaySeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts: [{name: data, mountPath: /srv/data}]
+      volumes: [{name: data, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bizchat-backend
+spec:
+  selector: {app: bizchat, component: backend}
+  ports: [{port: 8000, targetPort: 8000}]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bizchat-backend
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: bizchat-backend}
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 65}}
